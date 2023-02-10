@@ -7,9 +7,10 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 
 from configs import configure_argument_parser, configure_logging
-from constants import BASE_DIR, MAIN_DOC_URL
+from constants import BASE_DIR, EXPECTED_STATUSES, MAIN_DOC_URL, PEPS_URL
+from exceptions import ParserFindTagException
 from outputs import control_output
-from utils import get_response, find_tag
+from utils import LoggerWarning, get_pep_status, get_response, find_tag
 
 
 def whats_new(session):
@@ -17,6 +18,7 @@ def whats_new(session):
     response = get_response(session, whats_new_url)
     if response is None:
         return
+    logging.info('Parsing news started')
     soup = BeautifulSoup(response.text, features='lxml')
     main_div = find_tag(soup, 'section', attrs={'id': 'what-s-new-in-python'})
     div_with_ul = find_tag(main_div, 'div', attrs={'class': 'toctree-wrapper'})
@@ -37,6 +39,7 @@ def whats_new(session):
             h1.text.strip().replace('\n', ' '),
             dl.text.strip().replace('\n', ' ')
         ))
+    logging.info('Parsing news finished')
     return results
 
 
@@ -44,6 +47,7 @@ def latest_versions(session):
     response = get_response(session, MAIN_DOC_URL)
     if response is None:
         return
+    logging.info('Getting latest version started')
     soup = BeautifulSoup(response.text, features='lxml')
     sidebar = soup.find(name='div', attrs={'class': 'sphinxsidebarwrapper'})
     ul_tags = sidebar.find_all(name='ul')
@@ -52,10 +56,10 @@ def latest_versions(session):
             a_tags = ul.find_all('a')
             break
     else:
-        raise Exception('Ничего не нашлось')
+        raise ParserFindTagException('Found nothing')
     results = [('Ссылка на документацию', 'Версия', 'Статус')]
     pattern = r'Python (?P<version>\d\.\d+) \((?P<status>.*)\)'
-    for a_tag in a_tags:
+    for a_tag in tqdm(a_tags):
         link = a_tag['href']
         text_match = re.search(pattern, a_tag.text)
         if text_match is not None:
@@ -63,6 +67,7 @@ def latest_versions(session):
         else:
             version, status = a_tag.text, ''
         results.append((link, version, status))
+    logging.info('Getting latest version finished')
     return results
 
 
@@ -80,36 +85,80 @@ def download(session):
     downloads_dir = BASE_DIR / 'downloads'
     downloads_dir.mkdir(exist_ok=True)
     archive_path = downloads_dir / fileneme
-
     response = session.get(archive_url)
     with open(archive_path, 'wb') as f:
         f.write(response.content)
     logging.info(f'Архив был загружен и сохранен: {archive_path}')
 
 
+def get_pep(session):
+    response = get_response(session, PEPS_URL)
+    if response is None:
+        return
+    logging.info('Parsing PEP statuses started')
+    results, warnings = [], []
+    soup = BeautifulSoup(response.text, features='lxml')
+    section_div = find_tag(soup, 'section', attrs={'id': 'numerical-index'})
+    tr_divs = BeautifulSoup.find_all(section_div, 'tr')
+    for tr_div in tqdm(tr_divs[1:]):
+        abbr_div = find_tag(tr_div, 'abbr')
+        short_status = abbr_div.text[1:]
+        a_div = find_tag(tr_div, 'a', attrs={'class': 'pep reference internal'})
+        short_url = a_div.attrs.get('href', '')
+        url = urljoin(PEPS_URL, short_url)
+        status = get_pep_status(session, url)
+        results.append((status, short_status, url))
+        if short_status and status not in EXPECTED_STATUSES[short_status]:
+            warnings.append(
+                LoggerWarning(
+                    status=status,
+                    short_status=short_status,
+                    url=url
+                )
+            )
+    if warnings:
+        logging.warning('Несовпадающие статусы:')
+        for warning in warnings:
+            logging.warning(
+                '%s\nСтатус в карточке: %s\nОжидаемые статусы: %s',
+                warning.url,
+                warning.status,
+                list(EXPECTED_STATUSES[warning.short_status])
+            )
+    logging.info('Parsing PEP statuses finished')
+    if not results:
+        return None
+    result = [('Статус', 'Количество')]
+    for status in set([i[0] for i in results]):
+        data = [s for s in results if s[0] == status]
+        result.append((f'Количество PEP в статусе {status}', len(data)))
+    result.append(('Общее количество PEP', len(results)))
+    return result
+
+
 MODE_TO_FUNCTION = {
     'whats-new': whats_new,
     'latest-version': latest_versions,
     'download': download,
+    'pep': get_pep
 }
 
 
 def main():
     configure_logging()
-    logging.info('Парсер запущен.')
+    logging.info('Parser started')
     arg_parser = configure_argument_parser(MODE_TO_FUNCTION.keys())
     args = arg_parser.parse_args()
-    logging.info(f'Аргументы командной строки: {args}')
+    logging.info('command line arguments: %s', args)
     session = requests_cache.CachedSession()
     if args.clear_cache:
         session.cache.clear()
-
     parser_mode = args.mode
-    results = MODE_TO_FUNCTION[parser_mode](session)
-
+    func = MODE_TO_FUNCTION[parser_mode]
+    results = func(session)
     if results is not None:
         control_output(results, args)
-    logging.info('Парсер завершил работу.')
+    logging.info('All jobs done')
 
 
 if __name__ == '__main__':
