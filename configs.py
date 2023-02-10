@@ -24,7 +24,7 @@ def configure_argument_parser(aviable_modes):
         help='Очистка кэша'
     )
     parser.add_argument(
-        '-p',
+        '-o',
         '--output',
         choices=('pretty', 'file'),
         help='Дополнительные способы вывода данных'
@@ -39,7 +39,7 @@ def configure_logging():
     rotating_handler = RotatingFileHandler(
         log_file,
         maxBytes=10 ** 6,
-        backupCount= 5
+        backupCount=5
     )
 
     logging.basicConfig(
