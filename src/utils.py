@@ -1,7 +1,10 @@
 import logging
 
 from bs4 import BeautifulSoup
+from bs4.element import Tag
 from requests import RequestException
+from requests.models import Response
+from requests_cache import CachedSession
 from pydantic import BaseModel, HttpUrl
 
 from exceptions import ParserFindTagException
@@ -13,7 +16,7 @@ class LoggerWarning(BaseModel):
     url: HttpUrl
 
 
-def get_response(session, url):
+def get_response(session: CachedSession, url: str) -> Response:
     try:
         response = session.get(url)
         response.encoding = 'utf-8'
@@ -25,7 +28,11 @@ def get_response(session, url):
         )
 
 
-def find_tag(soup, tag, attrs=None):
+def find_tag(
+        soup: BeautifulSoup | Tag,
+        tag: str,
+        attrs: dict | None = None
+) -> Tag:
     searched_tag = soup.find(tag, attrs=(attrs or {}))
     if searched_tag is None:
         error_msg = f'Не найден тег {tag} {attrs}'
@@ -34,7 +41,7 @@ def find_tag(soup, tag, attrs=None):
     return searched_tag
 
 
-def get_pep_status(session, url):
+def get_pep_status(session: CachedSession, url: str) -> str:
     status = ''
     if not url:
         return status

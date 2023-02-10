@@ -3,7 +3,9 @@ import re
 from urllib.parse import urljoin
 
 import requests_cache
+
 from bs4 import BeautifulSoup
+from requests_cache import CachedSession
 from tqdm import tqdm
 
 from configs import configure_argument_parser, configure_logging
@@ -13,7 +15,7 @@ from outputs import control_output
 from utils import LoggerWarning, get_pep_status, get_response, find_tag
 
 
-def whats_new(session):
+def whats_new(session: CachedSession) -> list[tuple] | None:
     whats_new_url = urljoin(MAIN_DOC_URL, 'whatsnew/')
     response = get_response(session, whats_new_url)
     if response is None:
