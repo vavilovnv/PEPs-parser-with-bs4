@@ -21,7 +21,7 @@ def configure_argument_parser(aviable_modes):
         '-c',
         '--clear-cache',
         action='store_true',
-        help='Очистка кэша'
+        help='Очистка кеша'
     )
     parser.add_argument(
         '-o',

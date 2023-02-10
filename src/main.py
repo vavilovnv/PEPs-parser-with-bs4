@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 
 from configs import configure_argument_parser, configure_logging
-from constants import BASE_DIR, EXPECTED_STATUSES, MAIN_DOC_URL, PEPS_URL
+from constants import BASE_DIR, EXPECTED_STATUS, MAIN_DOC_URL, PEPS_URL
 from exceptions import ParserFindTagException
 from outputs import control_output
 from utils import LoggerWarning, get_pep_status, get_response, find_tag
@@ -21,9 +21,16 @@ def whats_new(session):
     logging.info('Parsing news started')
     soup = BeautifulSoup(response.text, features='lxml')
     main_div = find_tag(soup, 'section', attrs={'id': 'what-s-new-in-python'})
-    div_with_ul = find_tag(main_div, 'div', attrs={'class': 'toctree-wrapper'})
-    section_by_python = div_with_ul.find_all('li', attrs={'class': 'toctree-l1'})
-    results = [('Ссылка на статью', 'Заголовок', 'Редактор, автор')]
+    div_with_ul = find_tag(
+        main_div,
+        'div',
+        attrs={'class': 'toctree-wrapper'}
+    )
+    section_by_python = div_with_ul.find_all(
+        'li',
+        attrs={'class': 'toctree-l1'}
+    )
+    result = [('Ссылка на статью', 'Заголовок', 'Редактор, Автор')]
     for section in tqdm(section_by_python):
         version_a_tag = section.find('a')
         href = version_a_tag['href']
@@ -34,13 +41,13 @@ def whats_new(session):
         soup = BeautifulSoup(response.text, features='lxml')
         h1 = find_tag(soup, 'h1')
         dl = soup.find(name='dl')
-        results.append((
+        result.append((
             version_link,
             h1.text.strip().replace('\n', ' '),
             dl.text.strip().replace('\n', ' ')
         ))
     logging.info('Parsing news finished')
-    return results
+    return result
 
 
 def latest_versions(session):
@@ -78,7 +85,10 @@ def download(session):
         return
     soup = BeautifulSoup(response.text, features='lxml')
     table_tag = soup.find(name='table', attrs={'class': 'docutils'})
-    pdf_a4_tag = table_tag.find(name='a', attrs={'href': re.compile(r'.+pdf-a4\.zip$')})
+    pdf_a4_tag = table_tag.find(
+        name='a',
+        attrs={'href': re.compile(r'.+pdf-a4\.zip$')}
+    )
     pdf_a4_link = pdf_a4_tag['href']
     archive_url = urljoin(download_url, pdf_a4_link)
     fileneme = archive_url.split('/')[-1]
@@ -91,7 +101,7 @@ def download(session):
     logging.info(f'Архив был загружен и сохранен: {archive_path}')
 
 
-def get_pep(session):
+def pep(session):
     response = get_response(session, PEPS_URL)
     if response is None:
         return
@@ -103,12 +113,16 @@ def get_pep(session):
     for tr_div in tqdm(tr_divs[1:]):
         abbr_div = find_tag(tr_div, 'abbr')
         short_status = abbr_div.text[1:]
-        a_div = find_tag(tr_div, 'a', attrs={'class': 'pep reference internal'})
+        a_div = find_tag(
+            tr_div,
+            'a',
+            attrs={'class': 'pep reference internal'}
+        )
         short_url = a_div.attrs.get('href', '')
         url = urljoin(PEPS_URL, short_url)
         status = get_pep_status(session, url)
         results.append((status, short_status, url))
-        if short_status and status not in EXPECTED_STATUSES[short_status]:
+        if short_status and status not in EXPECTED_STATUS[short_status]:
             warnings.append(
                 LoggerWarning(
                     status=status,
@@ -123,7 +137,7 @@ def get_pep(session):
                 '%s\nСтатус в карточке: %s\nОжидаемые статусы: %s',
                 warning.url,
                 warning.status,
-                list(EXPECTED_STATUSES[warning.short_status])
+                list(EXPECTED_STATUS[warning.short_status])
             )
     logging.info('Parsing PEP statuses finished')
     if not results:
@@ -138,9 +152,9 @@ def get_pep(session):
 
 MODE_TO_FUNCTION = {
     'whats-new': whats_new,
-    'latest-version': latest_versions,
+    'latest-versions': latest_versions,
     'download': download,
-    'pep': get_pep
+    'pep': pep
 }
 
 
