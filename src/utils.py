@@ -24,13 +24,9 @@ def get_response(session: CachedSession, url: str) -> Response:
         )
 
 
-def find_tag(
-        soup: BeautifulSoup | Tag,
-        tag: str,
-        attrs: dict = None
-) -> Tag:
+def find_tag(soup, tag, attrs=None) -> Tag:
     """
-    Поиск тега в 'супе' и обработка исключения в случае если он не найден.
+    Поиск тега в 'супе' и вызов исключения в случае если он не найден.
     """
     searched_tag = soup.find(tag, attrs=(attrs or {}))
     if searched_tag is None:
