@@ -1,5 +1,6 @@
 import logging
 from logging.handlers import RotatingFileHandler
+from typing import KeysView
 
 from argparse import ArgumentParser
 
@@ -10,7 +11,10 @@ LOG_FORMAT = '"%(asctime)s - [%(levelname)s] - %(message)s'
 DT_FORMAT = '%d.%m.%Y %H:%M:%S'
 
 
-def configure_argument_parser(available_modes: list[str]) -> ArgumentParser:
+def configure_argument_parser(available_modes: KeysView) -> ArgumentParser:
+    """
+    Настройка параметров и опций для запуска парсера.
+    """
     parser = ArgumentParser(description='Парсер документации Python')
     parser.add_argument(
         'mode',
@@ -33,6 +37,9 @@ def configure_argument_parser(available_modes: list[str]) -> ArgumentParser:
 
 
 def configure_logging() -> None:
+    """
+    Настройки логгера.
+    """
     log_dir = BASE_DIR / 'logs'
     log_dir.mkdir(exist_ok=True)
     log_file = log_dir / 'parser.log'

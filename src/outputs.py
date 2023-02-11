@@ -2,12 +2,17 @@ import logging
 import csv
 import datetime as dt
 
+from argparse import Namespace
 from prettytable import PrettyTable
 
 from constants import BASE_DIR, DATETIME_FORMAT
 
 
-def control_output(results: list, cli_args: list) -> None:
+def control_output(results: list, cli_args: Namespace) -> None:
+    """
+    Обработка формата вывода данных: обычный вывод в консоль, в консоль в виде
+    pretty-table или в csv-файлы.
+    """
     output = cli_args.output
     if output == 'pretty':
         pretty_output(results)
@@ -18,11 +23,17 @@ def control_output(results: list, cli_args: list) -> None:
 
 
 def default_output(results: list) -> None:
+    """
+    Вывод данных в консоль.
+    """
     for row in results:
         print(*row)
 
 
 def pretty_output(results: list) -> None:
+    """
+    Вывод данных в консоль в формате pretty-table.
+    """
     table = PrettyTable()
     table.field_names = results[0]
     table.align = 'l'
@@ -30,7 +41,10 @@ def pretty_output(results: list) -> None:
     print(table)
 
 
-def file_output(results: list, cli_args: list) -> None:
+def file_output(results: list, cli_args: Namespace) -> None:
+    """
+    Вывод данных в формате csv-файла.
+    """
     results_dir = BASE_DIR / 'results'
     results_dir.mkdir(exist_ok=True)
     parser_mode = cli_args.mode
