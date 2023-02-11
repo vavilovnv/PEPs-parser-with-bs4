@@ -1,5 +1,6 @@
 import logging
 import re
+from typing import List, Optional, Tuple
 from urllib.parse import urljoin
 
 import requests_cache
@@ -15,7 +16,7 @@ from outputs import control_output
 from utils import get_pep_status, get_response, find_tag
 
 
-def whats_new(session: CachedSession) -> list[tuple] | None:
+def whats_new(session: CachedSession) -> Optional[List[Tuple]]:
     """
     Парсинг страниц с описанием обновлений в версиях Python.
     """
@@ -55,7 +56,7 @@ def whats_new(session: CachedSession) -> list[tuple] | None:
     return result
 
 
-def latest_versions(session):
+def latest_versions(session: CachedSession) -> Optional[List[Tuple]]:
     """
     Парсинг информации по актуальным версиям Python.
     """
@@ -86,7 +87,7 @@ def latest_versions(session):
     return results
 
 
-def download(session):
+def download(session: CachedSession) -> None:
     """
     Скачивание zip-архива с документацией актуальной версии Python.
     """
@@ -112,7 +113,7 @@ def download(session):
     logging.info(f'Архив был загружен и сохранен: {archive_path}')
 
 
-def pep(session):
+def pep(session: CachedSession) -> Optional[List[Tuple]]:
     """
     Парсинг информации по статусам Python Enhancement Proposals.
     """
