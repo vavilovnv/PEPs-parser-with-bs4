@@ -16,6 +16,9 @@ from utils import LoggerWarning, get_pep_status, get_response, find_tag
 
 
 def whats_new(session: CachedSession) -> list[tuple] | None:
+    """
+    Парсинг страниц с описанием обновлений в версиях Python.
+    """
     whats_new_url = urljoin(MAIN_DOC_URL, 'whatsnew/')
     response = get_response(session, whats_new_url)
     if response is None:
@@ -53,6 +56,9 @@ def whats_new(session: CachedSession) -> list[tuple] | None:
 
 
 def latest_versions(session):
+    """
+    Парсинг информации по актуальным версиям Python.
+    """
     response = get_response(session, MAIN_DOC_URL)
     if response is None:
         return
@@ -81,6 +87,9 @@ def latest_versions(session):
 
 
 def download(session):
+    """
+    Скачивание zip-архива с документацией актуальной версии Python.
+    """
     download_url = urljoin(MAIN_DOC_URL, 'download.html')
     response = get_response(session, download_url)
     if response is None:
@@ -93,10 +102,10 @@ def download(session):
     )
     pdf_a4_link = pdf_a4_tag['href']
     archive_url = urljoin(download_url, pdf_a4_link)
-    fileneme = archive_url.split('/')[-1]
+    filename = archive_url.split('/')[-1]
     downloads_dir = BASE_DIR / 'downloads'
     downloads_dir.mkdir(exist_ok=True)
-    archive_path = downloads_dir / fileneme
+    archive_path = downloads_dir / filename
     response = session.get(archive_url)
     with open(archive_path, 'wb') as f:
         f.write(response.content)
@@ -104,6 +113,9 @@ def download(session):
 
 
 def pep(session):
+    """
+    Парсинг информации по статусам Python Enhancement Proposals.
+    """
     response = get_response(session, PEPS_URL)
     if response is None:
         return

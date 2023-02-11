@@ -17,6 +17,9 @@ class LoggerWarning(BaseModel):
 
 
 def get_response(session: CachedSession, url: str) -> Response:
+    """
+    Получение ответа на get-запрос и обработка возможных исключений.
+    """
     try:
         response = session.get(url)
         response.encoding = 'utf-8'
@@ -33,6 +36,9 @@ def find_tag(
         tag: str,
         attrs: dict | None = None
 ) -> Tag:
+    """
+    Поиск тега в 'супе' и обработка исключения в случае если он не найден.
+    """
     searched_tag = soup.find(tag, attrs=(attrs or {}))
     if searched_tag is None:
         error_msg = f'Не найден тег {tag} {attrs}'
@@ -42,6 +48,9 @@ def find_tag(
 
 
 def get_pep_status(session: CachedSession, url: str) -> str:
+    """
+    Получение статуса PEP из комментариев к описанию PEP.
+    """
     status = ''
     if not url:
         return status
