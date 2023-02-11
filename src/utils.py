@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 from bs4 import BeautifulSoup
 from bs4.element import Tag
@@ -27,7 +28,7 @@ def get_response(session: CachedSession, url: str) -> Response:
 def find_tag(
         soup: BeautifulSoup | Tag,
         tag: str,
-        attrs: dict | None = None
+        attrs: Optional[dict] = None
 ) -> Tag:
     """
     Поиск тега в 'супе' и обработка исключения в случае если он не найден.
