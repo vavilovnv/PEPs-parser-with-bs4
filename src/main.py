@@ -11,7 +11,6 @@ from tqdm import tqdm
 from configs import configure_argument_parser, configure_logging
 from constants import BASE_DIR, EXPECTED_STATUS, MAIN_DOC_URL, PEPS_URL
 from exceptions import ParserFindTagException
-from models import LoggerWarning
 from outputs import control_output
 from utils import get_pep_status, get_response, find_tag
 
@@ -138,21 +137,15 @@ def pep(session):
         status = get_pep_status(session, url)
         results.append((status, short_status, url))
         if short_status and status not in EXPECTED_STATUS[short_status]:
-            warnings.append(
-                LoggerWarning(
-                    status=status,
-                    short_status=short_status,
-                    url=url
-                )
-            )
+            warnings.append((status, short_status, url))
     if warnings:
         logging.warning('Несовпадающие статусы:')
         for warning in warnings:
             logging.warning(
                 '%s\nСтатус в карточке: %s\nОжидаемые статусы: %s',
-                warning.url,
-                warning.status,
-                list(EXPECTED_STATUS[warning.short_status])
+                warning[2],
+                warning[0],
+                list(EXPECTED_STATUS[warning[1]])
             )
     logging.info('Parsing PEP statuses finished')
     if not results:
