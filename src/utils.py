@@ -5,15 +5,8 @@ from bs4.element import Tag
 from requests import RequestException
 from requests.models import Response
 from requests_cache import CachedSession
-from pydantic import BaseModel, HttpUrl
 
 from exceptions import ParserFindTagException
-
-
-class LoggerWarning(BaseModel):
-    status: str
-    short_status: str
-    url: HttpUrl
 
 
 def get_response(session: CachedSession, url: str) -> Response:

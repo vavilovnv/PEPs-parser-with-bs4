@@ -11,8 +11,9 @@ from tqdm import tqdm
 from configs import configure_argument_parser, configure_logging
 from constants import BASE_DIR, EXPECTED_STATUS, MAIN_DOC_URL, PEPS_URL
 from exceptions import ParserFindTagException
+from models import LoggerWarning
 from outputs import control_output
-from utils import LoggerWarning, get_pep_status, get_response, find_tag
+from utils import get_pep_status, get_response, find_tag
 
 
 def whats_new(session: CachedSession) -> list[tuple] | None:
