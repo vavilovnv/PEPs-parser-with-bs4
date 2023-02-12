@@ -138,14 +138,6 @@ def pep(session: CachedSession) -> Optional[List[Tuple]]:
         short_url = a_div.attrs.get('href', '')
         url = urljoin(PEPS_URL, short_url)
         status = get_pep_status(session, url)
-        """
-        Привет, Максим! Рад снова видеть тебя ревьювером моих работ! :)
-        Все замечания обработал. Изначально в решении хотел поумничать и
-        реализовал при помощи pydantic-модели, но импорт pydantic'a почему-то
-        не понравился тестам на сайте. Попытался обойти это, но не вышло. В
-        итоге все спешно допиливал, лишь бы тесты пройти. И получилась
-        кривотня.
-        """
         results[status] += 1
         try:
             if short_status and status not in EXPECTED_STATUS[short_status]:
