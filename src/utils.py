@@ -1,5 +1,7 @@
 import logging
 
+from dataclasses import dataclass
+
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 from requests import RequestException
@@ -7,6 +9,13 @@ from requests.models import Response
 from requests_cache import CachedSession
 
 from exceptions import ParserFindTagException
+
+
+@dataclass
+class ResultWarning:
+    status: str
+    short_status: str
+    url: str
 
 
 def get_response(session: CachedSession, url: str) -> Response:

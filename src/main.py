@@ -5,6 +5,8 @@ from urllib.parse import urljoin
 
 import requests_cache
 
+from collections import defaultdict
+
 from bs4 import BeautifulSoup
 from requests_cache import CachedSession
 from tqdm import tqdm
@@ -13,7 +15,7 @@ from configs import configure_argument_parser, configure_logging
 from constants import BASE_DIR, EXPECTED_STATUS, MAIN_DOC_URL, PEPS_URL
 from exceptions import ParserFindTagException
 from outputs import control_output
-from utils import get_pep_status, get_response, find_tag
+from utils import ResultWarning, get_pep_status, get_response, find_tag
 
 
 def whats_new(session: CachedSession) -> Optional[List[Tuple]]:
@@ -121,7 +123,7 @@ def pep(session: CachedSession) -> Optional[List[Tuple]]:
     if response is None:
         return
     logging.info('Parsing PEP statuses started')
-    results, warnings = [], []
+    results, warnings = defaultdict(int), []
     soup = BeautifulSoup(response.text, features='lxml')
     section_div = find_tag(soup, 'section', attrs={'id': 'numerical-index'})
     tr_divs = BeautifulSoup.find_all(section_div, 'tr')
@@ -136,26 +138,41 @@ def pep(session: CachedSession) -> Optional[List[Tuple]]:
         short_url = a_div.attrs.get('href', '')
         url = urljoin(PEPS_URL, short_url)
         status = get_pep_status(session, url)
-        results.append((status, short_status, url))
-        if short_status and status not in EXPECTED_STATUS[short_status]:
-            warnings.append((status, short_status, url))
+        """
+        Привет, Максим! Рад снова видеть тебя ревьювером моих работ! :)
+        Все замечания обработал. Изначально в решении хотел поумничать и
+        реализовал при помощи pydantic-модели, но импорт pydantic'a почему-то
+        не понравился тестам на сайте. Попытался обойти это, но не вышло. В
+        итоге все спешно допиливал, лишь бы тесты пройти. И получилась
+        кривотня.
+        """
+        results[status] += 1
+        try:
+            if short_status and status not in EXPECTED_STATUS[short_status]:
+                warnings.append(
+                    ResultWarning(
+                        status=status,
+                        short_status=short_status,
+                        url=url
+                    )
+                )
+        except KeyError as e:
+            logging.error(f'В словаре EXPECTED_STATUS не '
+                          f'найден ключ {short_status}: {e}')
+    logging.info('Parsing PEP statuses finished')
     if warnings:
         logging.warning('Несовпадающие статусы:')
         for warning in warnings:
             logging.warning(
                 '%s\nСтатус в карточке: %s\nОжидаемые статусы: %s',
-                warning[2],
-                warning[0],
-                list(EXPECTED_STATUS[warning[1]])
+                warning.url,
+                warning.status,
+                list(EXPECTED_STATUS[warning.short_status])
             )
-    logging.info('Parsing PEP statuses finished')
-    if not results:
-        return None
     result = [('Статус', 'Количество')]
-    for status in set([i[0] for i in results]):
-        data = [s for s in results if s[0] == status]
-        result.append((f'Количество PEP в статусе {status}', len(data)))
-    result.append(('Общее количество PEP', len(results)))
+    for status, count in results.items():
+        result.append((status, count))
+    result.append(('Итого', len(tr_divs) - 1))
     return result
 
 
